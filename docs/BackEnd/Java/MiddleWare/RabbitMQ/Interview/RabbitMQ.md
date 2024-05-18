@@ -492,7 +492,7 @@ public class Producer {
 }
 ```
 
-运行程序：[http://192.168.137.118:15672](http://127.0.0.1:15672)` `
+运行程序：
 
 在执行上述的消息发送之后；可以登录rabbitMQ的管理控制台,可以发现队列和其消息：
 
@@ -2165,7 +2165,7 @@ public class ConsumerTest {
 }
 ```
 
-运行测试类 ，会一直监听消息 ，查看后台 [http://192.168.137.118:15672/#/queues](http://localhost:15672/#/queues)` `
+运行测试类 ，会一直监听消息 ，查看后台
 
 
 
@@ -3271,8 +3271,6 @@ HAProxy提供高可用性、负载均衡以及基于TCP和HTTP应用的代理，
 ps -ef | grep haproxy
 
 访问如下地址对mq节点进行监控
-
-[http://192.168.137.118:8100/rabbitmq-stats](http://192.168.137.130:8100/rabbitmq-stats)
 
 ```
 springboot yml文件中访问mq集群地址：

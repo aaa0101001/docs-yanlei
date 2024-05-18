@@ -35,14 +35,6 @@ export default defineConfig({
                 ]
 
             },
-            {
-                text: '文档', items: [
-                    {text: '面试', link: '/docs/Interview/index'},
-                    {text: '算法', link: '/docs/Algorithm/index'},
-                    {text: '计算机网络', link: '/docs/ComputerNetwork/index'},
-                    {text: '操作系统', link: '/docs/OperatingSystem/index'}
-                ]
-            },
 
             // {text: '实例', link: '/markdown-examples'},
             // {text: 'GitHub', link: 'https://github.com/aaa0101001'},
