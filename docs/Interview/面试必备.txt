@@ -1,0 +1,226 @@
+面试必备：
+vue简单使用,vue初始化在created中
+
+删除：
+	点击删除，弹出：是否确认删除该条消息
+		是：逻辑删除
+			是：弹出删除成成功信息，并重新加载页面
+			否：删除失败，显示失败原因
+		否：取消事件
+
+ElementUI		
+
+mybatis分页插件配置，分页合理化
+
+
+图片存储方案：
+1、nginx:反向代理，负载均衡，静态资源服务器
+2、文件存储系统：Fastdfs、MinIO、HDFS
+3、云存储：阿里云，七牛云
+
+七牛云、elementui、vue、angularjs、quartz、poi
+
+七牛云：
+	文件存储服务器
+	使用：导入maven依赖，创建七牛云工具类，配置accesskey及secretKey、bucket名称，创建上传和删除方法
+
+Quartz定时任务
+	quartz结合redis
+	上传图片时声明一个key，value为文件名
+	上传入库时，声明一个key，value为文件名，
+	取两个key的value异同，把数据从文件服务器中删除，同时清空上述两个key的数据
+	创建定时任务每天从redis取异同删除垃圾文件或图片
+
+	使用：
+	1、导入maven依赖
+	2、自定义job类
+	3、注册JobDetail，通过反射调用指定的Job类
+	4、创建触发器并注入JobDetail，指定触发时间
+	5、创建一个同意的调度工厂，注入触发器
+
+
+Apache POI:Excel导入导出
+	下载模板Excel
+	1、传入excel文件，校验文件类型(xls,xlsx)并创建Workbook工作簿对象
+	2、创建返回对象List<String[]>
+	3、判断工作簿是否为空，循环遍历sheet页
+	4、获取当前sheet页，若sheet页为空，continue跳出当前循环
+	5、遍历行数据，用行号去获取列数据，并把数据添加到list中返回
+
+用户注册登录	
+
+
+
+SYT
+1、JWT
+
+2、阿里云短信
+3、微信登录、微信扫码登录
+4、easy-excel
+5、mongodb
+6、rabbitmq
+	--预约下单、取消订单时修改可预约数、剩余预约数
+	--调用短信发送接口
+7、微信支付
+8、swagger2
+
+
+电网零星物资
+1、技术架构
+	SpringBoot、SpringCloud、Hibernate、Nacos、Gateway、Feign、Redis、RabbitMQ、AngularJS
+	SpringBoot：简化新Spring应用的初始搭建以及开发过程，（内部集成SpringMVC和Tomcat）starter-web项目整合框架，实现项目架构整合
+	SpringCloud：基于Spring Boot实现的云原生应用开发工具，SpringCloud使用的技术：（Spring Cloud Gateway（zuul）、Spring Cloud Alibaba Nacos（eureka、config）、Spring Cloud Alibaba Sentinel和Spring Cloud Feign（ribbon）等）
+	Quartz、SpringTask：Spring定时任务，实现定时发送消息等
+	MyBatis-Plus：持久层框架ORM框架，实现数据持久化（ORM），与数据库进行交互
+	Redis：内存缓存，实现数据缓存-----商品详情数据缓存、分布式锁、单点登录存储用户信息、存储购物车数据等
+	Redisson：基于redis的Java驻内存数据网格
+	RabbitMQ：消息队列中间件，实现消息通知，异步解耦
+	ElasticSearch+Logstash+Kibana+Rest（spring提供javaAPI）: 全文检索服务器+可视化数据监控
+	ThreadPoolExecutor：线程池来实现异步操作，提供效率
+	Swagger2：Api接口文档工具、测试
+		接口文档谁写？ 后端写
+		Postman  接口文档 写word文档
+	MinIO:文件存储
+	支付宝支付、（微信支付）
+	Lombok: 实体类的中get，set 生成的jar包
+	Docker：容器技术
+	DockerFile：管理Docker镜像命令文本
+	Jenkins：持续集成工具  自动化部署工具
+	Redisson实现分布式锁、异步编排、使用支付宝支付、使用Swagger生成接口文档
+
+2、技术介绍
+	2.1 Nacos
+		1. 服务发现和服务健康监测
+		2. 动态配置服务（维护的时候）
+	2.2 Gateway
+		负载均衡、熔断降级、统一鉴权、请求过滤、路径重写、限流保护
+		熔断：应对雪崩效应的一种微服务链路保护机制
+		降级：服务器压力过大，保证核心业务，牺牲非核心业务，保证核心稳定
+
+页面静态化
+	什么是页面静态化
+		将动态页面转化成静态的html，降低与数据库的交互次数，提高页面的访问速度
+		就是服务器在请求来之前把已经固定好的东西先编译好了，等请求来了再动态的填数据，不要等请求来了什么都没做忙得半死
+		利用第三方提供的模板引擎,生成对应的html
+		常用的页面静态化技术有thymeleaf、freemarker
+	为什么要用页面静态化
+		网页静态化技术和缓存技术的共同点都是为了减轻数据库的访问压力
+		而网页静态化比较适合大规模且相对变化不太频繁的数据。
+		将网页以纯静态化的形式展现，就可以使用Nginx这样的高性能的web服务器来部署
+		Nginx可以承载5万的并发，而Tomcat只有几百
+
+异步编排：
+	商品基本信息
+	商品图片信息
+	商品海报信息
+	商品价格
+	商品增加热度
+	商品评论
+	多个接口调用数据
+	优化：异步编排，使用多个线程同时调用接口，节省时间
+
+redis在项目中的使用
+	（1）string商品详情中的数据放入缓存，分布式锁；
+	（2）单点登录系统中也用到了redis。因为我们是微服务系统，把用户信息(id和ip)存到redis中便于多系统之间获取共用数据；
+	（3）我们项目中同时也将购物车的信息设计存储在redis中Hash，用户未登录采用UUID作为Key，value是购物车对象；用户登录之后将商品添加到购物车后存储到redis中，key是用户id，value是购物车对象；
+	{uuid:[{skuid:cartinfo},{skuid:cartinfo}….]}
+	{userId:[{skuid:cartinfo},{skuid:cartinfo}….]}
+	（4）订单模块的，结算页中订单流水号String类型；
+	（5）秒杀中使用list类型控制库存\商品缓存\临时订单\购买记录；
+	（6）搜索中商品热度统计，使用sorted set(ZSet)；
+
+ES
+	创建mapping
+		1、哪些字段需要分词
+			a)例如：商品名称   红米 手机 K30 Pro
+		2、我们用哪些字段进行过滤（当做查询的条件）
+			a)平台属性值
+			b)分类Id
+			c)品牌、价格区间、热度(评论、销量)
+		3、哪些字段我们需要通过搜索查询出来。
+			Id(隐藏)，商品名称,价格,图片等
+
+	主键：skuId
+
+登录：
+	登录成功，使用uuid生成token并获取用户ip地址，将tocken为可以，用户id和ip为value，设置7天过期时间存入到redis中，返回token、用户名、昵称，前端将tocken存到cookie中
+
+	鉴权
+		在网关中创建全局Filter，统一处理会员登录与外部不允许访问的服务
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

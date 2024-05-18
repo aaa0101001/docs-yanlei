@@ -1,0 +1,914 @@
+mysql 高级第一天：
+	1.	介绍MySQL！	了解！
+	2.	安装MySQL!	掌握！
+			a.	使用rpm 安装。 rpm -ivh xxx; common libs client server;
+				
+			b.	启用初始化命令
+					mysqld --initialize --user=mysql
+			c.	修改密码
+					ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+			
+			掌握对数据库的操作！
+				1.	创建一个数据库！
+						创建数据库的时候，默认的字符集是拉丁。
+						
+						解决字符集：
+							将字符集配置成UTF-8;
+						
+						创建数据之前直接配置字符集！
+							vim	/etc/my.cnf
+								character-set-server=utf8
+								collation-server=utf8_general_ci
+								
+							systemctl restart mysqld;
+							
+						后续在创建数据库。。。。。
+						
+						
+						备选：。。。。。
+						核心配置：
+							my.cnf
+							【mysqld】
+								character-set-server=utf8
+								collation-server=utf8_general_ci
+								
+								重启mysql 服务！
+							对于mydb 数据来讲，你是后配置的！mydb 中有个mytbl表。这个表的字符集没有改！
+								alter table mytbl convert to  character set 'utf8';
+								
+						如果没有在配置文件中设置数据库的字符集，也想更改数据库，表的字符集！
+							alter database mydb character set 'utf8';
+							alter table mytbl convert to  character set 'utf8';
+							
+								
+	3.	MySQL权限等应用!	必会！
+			用户与权限管理：针对DBA
+				创建用户：
+					create user zhang3 indentifyby '123123';
+					
+					mysql> select host, user ,authentication_string from mysql.user;
+					+-----------+---------------+-------------------------------------------+
+					| host      | user          | authentication_string                     |
+					+-----------+---------------+-------------------------------------------+
+					| localhost | root          | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B |
+					| localhost | mysql.session | *THISISNOTAVALIDPASSWORDTHATCANBEUSEDHERE |
+					| localhost | mysql.sys     | *THISISNOTAVALIDPASSWORDTHATCANBEUSEDHERE |
+					| %         | zhang3        | *FD571203974BA9AFE270FE62151AE967ECA5E0AA |
+					+-----------+---------------+-------------------------------------------+
+
+					表示这个张三可以本地登录，同时可以远程链接！
+					
+				修改密码：
+					zhang3 自己修改密码操作：
+						set password=password('123456');
+					root：
+						update mysql.user set authentication_string=password('111111') where user='zhang3'; 
+						flush privileges;
+					password('123456') 修改密码的函数：{方法}
+					
+				删除用户：
+					mysql 默认开启事务? 
+						commit; rollback;
+						
+					delete : 删除表数据！
+						可以使用rollback 回滚数据！ 删除的时候，会记录日志文件，采用rollback 的时候，会读取日志恢复数据！
+					truncate : 删除表数据！
+						truncate table tname;	彻底删除数据，因为它不写日志！ 效率高！风险高！
+						
+					oracle 数据库默认事务开启： 对数据的安全性要求非常严格！
+						使用delete 命令时，必须要手动提交commit 才能生效！ 给了用户的确认时间！ 保证数据的安全性！ rollback！
+						
+					mysql 数据库演示的时候，感觉跟没有开启事务一样！ 事务开启的！但是有自动提交！
+						因为只用delete 命令时，不需要commit 也能生效！ autocommit = true; 自动提交功能！没有用户的确认时间！相对于数据来讲不太安全！
+						set autocommit = off;
+						
+						
+					面试题：delete and truncate 区别？
+						
+					drop : 删除表 , 用户, 库;
+					
+					drop user userName;
+					
+				授权+创建用户：
+					all  |  insert  update  delete select ....
+					王道：
+						授权：grant all privileges on *.* to joe@'%' identified by '123'; 
+					
+						回收：REVOKE ALL PRIVILEGES ON *.* FROM joe@'%';  
+						
+					授权root 用户具有远程链接权限！
+					grant all privileges on *.* to root@'%'  identified by 'root';
+					
+				客户端登录的时候： 使用localhost的root！
+				远程工具链接的时候：使用%的root！
+				
+				
+			总结：
+				1.	grant all privileges on *.* to joe@'%' identified by '123'; | REVOKE ALL PRIVILEGES ON *.* FROM joe@'%';
+				
+				2.	修改密码
+						update mysql.user set authentication_string=password('111111') where user='zhang3'; 
+						flush privileges;
+						
+				3.	delete 与 truncate 的区别！
+						mysql 与 oracle 测试对比！
+							delete删除需要记录日志，能够回滚数据，相对于数据来讲安全！
+							truncate删除不需要记录日志，不能回滚数据，相当于数据来讲不安全！
+			
+		mysql 的杂项配置：
+			sql_mode : 
+				是否允许用户进行非法操作！
+				
+			mysql：
+				group by：分组
+					mysql： SELECT * from t_emp t GROUP BY  t.deptId;	在windows 执行能过！本地的mysql！ 并非 windows 中 localhost -- root
+					oracle：select * from emp group by deptno; 	在windows 执行不能过！
+				
+				linux：mysql 本地root 
+					mysql> select @@GLOBAL.sql_mode;
+					+-------------------------------------------------------------------------------------------------------------------------------------------+
+					| @@GLOBAL.sql_mode                                                                                                                         |
+					+-------------------------------------------------------------------------------------------------------------------------------------------+
+					| ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION |
+					+-------------------------------------------------------------------------------------------------------------------------------------------+
+					1 row in set (0.00 sec)
+				windows：mysql 远程root % root localhost
+					ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+					
+				windows：localhost
+					STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+					
+				结论：
+					linxu 中：本地root ，% root 他们的 sql_mode 都一致！
+					windows：localhost--linux 与 windows：mysql 他们的sql_mode不一致！
+				
+				案例：
+					查询每个部门 年龄最大的人？
+						101 li4 102 tian7！
+						
+						每个部门：group by dept;
+							select * from mytbl2 group by dept; 在linux 中执行这个sql 语句，结果是失败！
+								ERROR 1055 (42000): Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'mydb.mytbl2.id' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+								使用group by 的时候，没有按照格式去使用！ 
+							改掉了：
+							select dept from mytbl2 group by dept;
+								查询字段只有分组字段
+							mysql> select dept,max(age) from mytbl2 group by dept;
+								+------+----------+
+								| dept | max(age) |
+								+------+----------+
+								|  101 |       34 |
+								|  102 |       36 |
+								+------+----------+
+								这个结果集可以看做一个虚拟表！
+								
+						使用[组函数 聚合函数] max(age);
+						正确的SQL：
+							select * from mytbl2 m1 inner join (select dept,max(age) mage from mytbl2 group by dept) mid on m1.age = mid.mage and m1.dept = mid.dept;
+					
+						为什么？
+							select * from mytbl2 group by dept; 在linux 中执行失败！而在windows 中就能执行成功？
+							
+							linux 中mysql 的sql_mode
+								ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION |
+							
+							windows 本地的mysql 的sql_mode
+								STRICT_TRANS_TABLES,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+								
+							因为Linux 中的sql_mode 选项中有一个 ONLY_FULL_GROUP_BY 的值，那么这个值，就表示使用group by 时，必须要严格！
+								
+								SELECT * from t_emp t GROUP BY  t.deptId; 没有没有ONLY_FULL_GROUP_BY 就可以执行过！
+								SELECT * from t_emp t GROUP BY  t.deptId; 有没有ONLY_FULL_GROUP_BY 就不能执行通过！
+							
+						结论：
+							使用group by 时，查询项需要是 分组字段，聚合函数 ！
+													
+						windows 默认不严格：
+							sql_mode 不带有ONLY_FULL_GROUP_BY
+						linux 安装是严格的！
+							sql_mode 带有ONLY_FULL_GROUP_BY
+							
+							mysql 被 oracle 收购了，oracle 不哪个版本，不关哪个平台 都是严格模式 。
+					
+			请问：
+				select * from emp group by deptId; 这条语句能够执行通过？
+				
+			elasticsearch：
+				聚合：
+			MongoDB：
+				聚合：
+
+			
+	4.	mysql逻辑结构！	了解！
+			面试题：
+				where and having 区别？
+				
+				where and inner join 啥区别？
+					SELECT * from t_emp e ,t_dept d where e.deptId = d.id;
+					SELECT * from t_emp e inner JOIN t_dept d ON e.deptId = d.id;
+					
+			连接层：
+			服务层：	必会！
+				解析器：
+					记住鱼骨图！
+					
+				优化器：
+			引擎层：
+			存储层：
+				利用命令查看sql 语句的执行顺序！
+					a.	开启配置 /etc/my.cnf
+							query_cache_type=1
+							
+							set profiling=1
+							
+					b.	执行两次sql语句：
+							select * from mydb.mytbl where id=1;
+								第一次执行的时候，记录这个sql语句的样本，将这个样本进行解析，并从表中获取数据，将结果添加到缓存中！ 时间都耗费在开表的过程中
+								第二次执行的时候，这个过程知道你这条sql 语句执行过！ 直接去缓存中获取数据并返回！此过程没有开表！节省时间！
+							
+							结论：
+								两条一模一样的语句在执行的时候，中间如果有DML 语句操作：则sql语句将不会走缓存！
+								两条语句查询结果一样，但是，写法不一样{有大小写区分，条件不一样} ，则sql语句将不会走缓存！
+			
+			总结：  必会！
+				记住mysql 的执行过程！
+					通过客户端，链接到mysql，执行sql 语句！
+						sql 语句是否执行过！
+							true:	直接查询缓存，并返回结果集！
+							false:	没有
+								通过mysql 的服务层，对sql 语句进行解析，并优化找到一个最佳的执行计划！
+								通过执行引擎获取数据并返回给用户，同时放入缓存！
+								
+					无论如何执行，这表中至少要利用上一个索引！ mysql 其实使用的是B+Tree!
+					索引目的：就是提高查询效率！应该使用哪种数据结构？哈希表！
+				
+				面试题：
+					为什么不用哈希表，而使用B+Tree
+					因为InnoDB 不支持哈希表！采用B+Tree！
+					
+	5.	数据结构与时间复杂度.
+			概念省略....
+			哈希最好，树次之！
+			但是，范围查找时哈希会退化成O(n)，因为InnoDB 不支持哈希表！
+			
+	6.	有关于树！
+			
+-------------------------------------------------------------------
+mysql 高级第二天：
+	回顾：
+		1.	记住mysql 的安装，推荐使用rpm 安装！
+				common libs client server;
+				
+				初始化
+				
+				初始化配置文件 vie /etc/my.cnf 配置字符集！
+			
+		2.	用户创建以及权限！
+				grant all privileges on *.* to joe@'%' identified by '123';
+				
+		3.	sql_mode :
+				使用group by要求！
+					查询项，是分组字段 或 组函数！
+					select * from t_emp group by deptid;
+				linux 安装mysql 的时候，sql_mode 严格模式 
+				windows 安装的mysql sql_mode 不是严格模式
+				
+		4.	mysql 逻辑结构：
+				连接层：
+				服务层：*****
+				引擎层：
+				存储层：
+		
+		5.	有关于数据结构：
+				哈希表最好，树次之！
+				有关于mysql 的存储引擎：默认是InnoDB, 不支持哈希，只能采用平衡树来当索引的数据结构！
+				
+重点：
+	索引：
+	
+第一，	树：
+		普通的二叉树：
+			但是，有弊端：在查找数据的时候，效率低！
+		平衡二叉树：
+			查找数据的效率高于普通的二叉树，但是在旋转的过程中会降低性能！
+			如果数据非常多，则这棵树，会变的瘦高！
+			
+			由瘦高---> 矮胖
+		BTree：
+			减少了树的高度，降低IO次数！
+			叶子节点与非叶子节点都会存储数据！
+			
+			节点中：存储的内容有：
+					指针：
+					键值：
+					数据：
+			这个BTree 还可以优化！
+			
+		B+Tree：
+			数据只存储在叶子节点，非叶子节点存储：键值 and 指针！
+			
+			
+		BTree 和 B+Tree 区别？
+			1.	叶子节点与非叶子节点都会存储数据！
+			2.	数据只存储在叶子节点！
+			
+			推出一个结论：前提，在磁盘块大小一致的情况下，B+Tree 能够存储更多的数据！在非叶子节点中不存储数据！节省了空间，从而能够存储更多的键值和指针！
+			
+			mysql 数据库默认使用innoDB 存储引擎，使用的B+Tree ！
+			
+		问mysql 索引的存储结构为什么不使用BTree 而是使用B+Tree?
+			
+第二，	存储引擎：
+		重点：InnoDB 和 MYISAM 区别？
+		InnoDB : 支持事务，行级锁，外键，XA, 保存点，默认推荐时间, 能够处理并发请求，支持聚簇索引！
+		
+		mysql> show engines;
+		+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+		| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
+		+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+		| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+		| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+		| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+		| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+		| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+		| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+		| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+		| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+		| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
+		+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+			
+		数据库研发工程师： PL/SQL 编程 事务，存储过程，函数....
+		早上：开始干活......  100行代码，savepoint a;  150行  , 下午项目经理来了，看你代码发现50 垃圾....; go to a; 晚上加个班.
+		
+第三，	SQL的七种join 
+			1.	记住sql 语句的手写顺序，机读顺序！
+			
+			2.	7种join 图！
+					mysql 不支持全链接：
+						select * from t_emp a full join t_dept b on a.deptId = b.id;
+				
+				demo:
+					A、B两表共有(查询所有有部门的员工->员工和部门之间必须存在关联的数据)
+						A inner join B
+						select * from t_emp a inner join t_dept b on a.deptId = b.id;
+						
+					A、B两表共有+A的独有（列出所有部门，并显示其部门的员工信息 ）A的全集
+						A left join B
+						select * from t_emp a left join t_dept b on a.deptId = b.id;
+						
+					A、B两表共有+B的独有（列出所有部门，并显示其部门的员工信息 ）B的全集
+						A right join B
+						select * from t_emp a right join t_dept b on a.deptId = b.id;
+						
+						B left join A
+						
+					A的独有 （查询没有加入任何部门的员工）
+						select * from t_emp a left join t_dept b on a.deptId = b.id where b.id is null;
+
+					B的独有（查询没有任何员工的部门）
+						select * from t_emp a right join t_dept b on a.deptId = b.id where a.id is null;
+						
+					AB全有（查询所有员工和所有部门）
+						Oracle: full join
+						mysql: 不支持full join  但是可以使用union 代替：  left join  + right join
+						解决方案：使用union链接两个结果集：
+							union all ：表示关联结果集，不去重复！
+							select * from t_emp a left join t_dept b on a.deptId = b.id
+							union
+							select * from t_emp a right join t_dept b on a.deptId = b.id;
+						
+					A的独有+B的独有（查询没有加入任何部门的员工，以及查询出部门下没有任何员工的部门）
+					select * from t_emp a left join t_dept b on a.deptId = b.id where b.id is null
+					union
+					select * from t_emp a right join t_dept b on a.deptId = b.id where a.id is null;
+			
+				总结：
+				inner join : 两个结果集的时候：不会有空数据出现！
+				left join 、right join 可能会有一方{从表} 有空数据出现！
+				
+			扩展：	
+				求各个门派对应的掌门人名称！
+				select * from t_dept b left join t_emp a on a.id = b.ceo;
+				
+				求所有当上掌门人的平均年龄: 
+				select avg(age) from t_dept b inner join t_emp a on a.id = b.ceo;
+				
+				求所有人，对应的掌门是谁！ 【哪些人年龄大于70】
+					找出掌门人，在安排门派，在找门派对应的人！
+					# 找掌门人的关联条件：a.id = b.ceo 
+					# 找门派对应的人关联条件：a.deptId = b.id;
+					select * from t_emp a;
+					select * from t_dept b;
+					
+					关联查询：
+					select a.name,c.name from t_emp a left join t_dept b on a.deptid = b.id left join t_emp c on c.id = b.ceo;
+					
+					了解即可：
+					子查询：
+					select c.name , (select name from t_emp a where a.id = b.ceo) ceoname from t_emp c left join t_dept b on c.deptId = b.id;
+					
+					中间表：
+						关键还是 a.id = b.ceo and a.deptId = b.id;
+						a.id = b.ceo ： 找出一个中间表：
+							select a.deptid, a.name from t_emp a inner join t_dept b on a.id = b.ceo; 
+							用上述的结果集与 t_emp 进行整合！关联条件：a.deptId = b.id;
+						
+							SELECT c.name,ab.ceoname FROM t_emp c LEFT JOIN
+							( SELECT b.id AS deptId,a.name AS ceoname FROM t_emp a INNER JOIN t_dept b ON a.id = b.ceo ) ab
+							ON c.deptId = ab.deptId ;
+							
+						a.deptId = b.id： 找出一个中间表：
+							select * from t_emp a left join t_dept b on a.deptid = b.id; 
+							在利用 ： a.id = b.ceo 进行关联！
+							
+							SELECT ab.name,c.name AS ceoname FROM 
+							( SELECT a.name,b.ceo FROM t_emp a LEFT JOIN t_dept b ON a.deptid = b.id ) ab
+							LEFT JOIN t_emp c ON ab.ceo = c.id ;
+					
+					推荐：使用第一种：关联查询的方式！
+				
+				在你工作过程中：印象最深刻的sql 语句是什么？ 重点！
+					如何写出多表关联查询的SQL?
+					# 求所有人，对应的掌门是谁！ 如何写出多表关联查询的SQL?
+					#1.	找到相关的表 ：t_emp ,t_dept
+					#2.	分析表与表的关联方式：left join right join inner join 【full join = left join union right join】 on 关联条件 a.id = b.ceo  a.deptId = b.id;
+					#3. 从需求中找出过滤条件
+					#4. 再结合业务稍加调整：
+							
+第四，	索引优化分析：
+			索引：	本质就是一种数据结构，利用在数据结构高效的检索数据{B+Tree} ,以文件的形式存储在磁盘上的！
+			
+				索引在加载的时候，是以页为单位加载的。每个磁盘页大小默认16KB!
+				
+				优点：提高检索效率，降低CPU消耗！
+				劣势：
+					1.	索引占用空间的 {保存的是主键+索引字段}
+					2.	如果这个表经常有DML 语言操作： 那么维护这个索引也是需要成本的！
+	
+第五，	索引分类：
+			聚簇索引：
+				是一种数据存储方式, [数据跟索引]放在一起就是聚簇索引!
+				主键：就是一个聚簇索引！
+					扩展：重点！
+						每张表都有主键么？不一定！
+						如果这个表有主键，那么主键就是聚簇索引,如果没有主键，则唯一键是聚簇索引，如果没有唯一键，则会产生一个rowId 的作为聚簇索引！
+
+			非聚簇索引:
+				在查询数据的时候，可能会产生回表！
+		
+			9.5.1.单值索引：
+				
+			9.5.2.唯一索引：
+			
+			9.5.3.主键索引：
+			
+			9.5.4.复合索引/组合索引：
+			
+			语法：
+				创建：
+					CREATE  [UNIQUE] INDEX indexName ON mytable(column name(length)); 
+				删除：
+					DROP INDEX [indexName] ON mytable; 
+				查看：
+					SHOW INDEX FROM table_name;
+					
+		重点！
+		适合创建索引：
+			1.	频繁作为查询条件的字段应该创建索引：手机号！
+			2.	查询中与其它表关联的字段，外键关系建立索引！  
+			3.	创建索引的时候，尽量创建复合索引！手机号！邮箱！
+			4.	查询中排序的字段，建立索引！
+			5.	查询中统计或者分组字段，建立索引！
+			
+			总结：频查询{复合}，有关联，有过滤，排序，分组 建立索引！
+			
+		不适合创建索引：
+			1.	表记录太少
+			2.	经常增删改的表
+			3.	where条件里用不到的字段不创建索引
+			
+第六，	explain 关键字使用！ 重点！
+			explain + sql: 
+		mysql> explain select a.name,c.name from t_emp a left join t_dept b on a.deptid = b.id left join t_emp c on c.id = b.ceo;
+		+----+-------------+-------+------------+--------+---------------+---------+---------+---------------+------+----------+-------+
+		| id | select_type | table | partitions | type   | possible_keys | key     | key_len | ref           | rows | filtered | Extra |
+		+----+-------------+-------+------------+--------+---------------+---------+---------+---------------+------+----------+-------+
+		|  1 | SIMPLE      | a     | NULL       | ALL    | NULL          | NULL    | NULL    | NULL          |   10 |   100.00 | NULL  |
+		|  1 | SIMPLE      | b     | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | mydb.a.deptId |    1 |   100.00 | NULL  |
+		|  1 | SIMPLE      | c     | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | mydb.b.CEO    |    1 |   100.00 | NULL  |
+		+----+-------------+-------+------------+--------+---------------+---------+---------+---------------+------+----------+-------+
+		3 rows in set, 1 warning (0.00 sec)
+
+		id:	表示执行的顺序：
+			相同：从上往下执行：
+			不同：从大到小执行！
+		
+		type:
+			system>const>eq_ref>ref>range>index>ALL
+			
+			一般开发中：达到“ref ，range” 就可以了。
+			ALL：表示全磁盘扫描！
+			index: 表示遍历整棵索引树！
+			
+			覆盖索引：提高查询效率！
+			
+		
+	面试：
+		简述一下你对索引的认识，用过哪些索引，如何优化的？
+
+---------------------------------------------------------------------------------------
+mysql 高级第三天：
+	回顾：省略....
+	
+第一，	explain 关键字使用！
+		id:	表示执行的顺序：
+			相同：从上往下执行：
+			不同：从大到小执行！
+		
+		type:
+			system>const>eq_ref>ref>range>index>ALL
+			
+			一般开发中：达到“ref ，range” 就可以了。
+			ALL：表示全磁盘扫描！
+			index: 表示遍历整棵索引树！
+			
+			覆盖索引：提高查询效率！
+			
+		ken_length: 表示使用索引的长度：通常这个值越大越好！
+		rows：这个值越小越好！
+		Extra：
+			Using filesort： 表示排序没有使用索引！		----- 添加索引！
+				如果排序的字段没有使用到索引的话， 那么mysql 内部会利用"文件排序"，对数据进行排序！
+				
+			Using temporary:	表示分组没有使用索引！	----- 添加索引！
+				分组之前默认先排序：
+					
+			Using index：表示覆盖索引！					----- 尽量出现！
+				查询的时候，尽量使用覆盖索引！	不要使用 select * !
+				
+			using join buffer：	如果有它则表明关联字段没有使用索引！----- 添加索引！
+				需要在关联的字段添加索引！
+	
+	mysql 创建函数：
+	CREATE FUNCTION rand_string(n INT) 
+	BEGIN    
+
+	END
+	相当于Java 中有返回值的方法！
+	
+	drop FUNCTION rand_string;
+	
+	mysql 存储过程：
+	相当于Java 中没有返回值的方法！
+	CREATE PROCEDURE  insert_emp(  START INT ,  max_num INT )
+	BEGIN  
+		
+	END
+	
+	drop PROCEDURE insert_dept;	
+	
+	调用存储过程：
+	CALL insert_dept(100000); 
+	
+	删除某张表的索引：可以编写一个存储过程，然后直接调用！
+	
+	CALL proc_drop_index("mydb","t_emp");
+		
+				
+第二，	索引使用：
+	单表优化：
+		1.	全值匹配我最爱！
+		
+		2.	最佳左前缀法则!
+				使用的时候，一定要按照索引创建顺序使用！ 一旦跳过则将索引失效！
+				
+		3.	计算、函数导致索引失效
+
+		4.	范围条件右边的列索引失效
+				如果是and 条件查询，可以优化！ 将范围条件放在最后，同时创建一个新的索引与之对应！
+				
+		5.	不等于(!= 或者<>)索引失效
+		
+		6.	is not null无法使用索引，is null可使用索引
+		
+		7.	like以通配符%开头索引失效
+		
+		8.	类型转换导致索引失效
+	
+	关联优化：
+		一个分类表：
+		一个图书表：
+		
+		A left join B  
+			右表被驱动表，可以用上索引，避免全表扫描
+			左表驱动表，不能使用索引，无法避免全表扫描！
+		
+		A inner join B
+			自动识别谁应该作为驱动表，谁应该作为被驱动表！
+		
+	总结：
+		1)保证被驱动表的join字段被索引
+		2)left join 时，选择小表作为驱动表，大表作为被驱动表
+		3)inner join 时，mysql会自动将小结果集的表选为驱动表。选择相信mysql优化策略
+		4)能够直接多表关联的尽量直接关联，不用子查询
+		
+	子查询优化：
+		NOT IN --> LEFT JOIN xxx ON xx WHERE xx IS NULL ， 尽量不要使用not in  或者 not exists！
+		
+	
+	排序、分组优化：
+		1.	无过滤 不索引
+		2.	顺序错，必排序
+		3.	方向反 必排序
+			
+			Using index condition: 简称ICP
+	
+		4.	一条sql 语句中 
+			EXPLAIN SELECT SQL_NO_CACHE * FROM emp WHERE age =30 AND empno <101000 ORDER BY NAME ; 
+				创建索引的时候：
+					一种是选择过滤：	age ,empno		效率高！
+					一种是过滤+排序：	age ,name		效率低！
+				
+				第一种方案：能够过滤出90%的数据！ 对剩下的数据进行排序！	mysql 默认使用文件排序
+				第二种方案：能够过滤出30%的数据！ 对剩下的数据进行排序！
+				
+				需要将各个方案创建出来，使用sql语句进行统一测试！
+				
+	排序：单路排序和双路排序！
+			双路排序：经过两次扫描！效率低！
+			单路排序：经过一次扫描！效率高！但是需要更多的内存空间！
+			
+		
+			分组用法：
+			与order by 类似，但是group by 可以没有过滤条件也可以使用索引！
+			提高排序速度：
+				增大sort_buffer_size参数的设置
+				增大max_length_for_sort_data参数的设置
+				减少select 后面的查询的字段。 禁止使用select * 
+					
+	
+第三，	慢查询日志：
+		在功能开发的时候，可以开启慢查询日志 ： 记录你认为sql 语句执行比较长时间的！
+		然后通过日志找到sql 语句进行优化！
+			
+			a.	开启慢查询日志：
+					set global slow_query_log=1;
+					如果永久开启，则需要配置在my.cnf 中！
+				
+			b.	设置慢查询的阈值 ：
+					SET GLOBAL long_query_time=0.1;
+					
+			c.	测试：
+					select * from emp;
+					
+					PG:
+						开发的时候开启这个慢查询日志！
+			
+			vim /var/lib/mysql/localhost-slow.log
+		
+		慢查询日志分析：
+			demo:
+			mysqldumpslow -s r -t 10 /var/lib/mysql/localhost-slow.log
+			
+第四，	视图：
+			是什么?
+				是由sql 语句组成的有"灵魂"的虚拟表！
+				
+			作用是什么?
+				提高复用性，修改数据之后，视图会自动变更数据！ {修改表之后，视图会随着表的数据变化而变化}
+				
+			语法：
+				create view v_name 
+					as
+						sql 语句！{多表组成}
+
+		
+第五，	主从复制；
+		原理：
+			两日志 {二进制日志，中继日志}，两线程{IO 线程读取二进制日志， SQL线程 读中继日志}！
+		
+		原则：
+		每个slave只有一个master
+		每个slave只能有一个唯一的服务器ID
+		每个master可以有多个salve
+		实战：
+			2个 linux 
+			
+			master：192.168.200.168 
+				
+			slave：192.168.200.166
+			
+				从机，可以自己重新建立，或者是克隆一份master！
+				
+			
+			1.	制作配置文件：my.cnf 
+					
+			
+			2.	在主机建立账户并授权！
+					GRANT REPLICATION SLAVE ON *.* TO 'slave'@'%' IDENTIFIED BY '123456';
+					flush privileges;
+					mysql> show master status;
+					+------------------+----------+--------------+-------------------------+-------------------+
+					| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB        | Executed_Gtid_Set |
+					+------------------+----------+--------------+-------------------------+-------------------+
+					| mysql-bin.000001 |      590 | mytestdb     | mysql,infomation_schema |                   |
+					+------------------+----------+--------------+-------------------------+-------------------+
+			
+			3.	从机需要读取主机数据！
+					CHANGE MASTER TO MASTER_HOST='主机ip地址',
+					MASTER_USER='X',MASTER_PASSWORD='X',
+					MASTER_LOG_FILE='mysql-bin.具体数字',MASTER_LOG_POS=具体值; 
+					
+			4.	start slave;
+					show slave status \G;
+					  Slave_IO_Running: Yes
+					  Slave_SQL_Running: Yes
+					
+					
+					
+---------------------------------------------------------------------------------------------------------------------
+mysql 高级第四天：
+重点：
+	192.168.200.168: master
+	192.168.200.166: slave
+	
+	mycat:	192.168.200.168 
+	mycat 就是一个mysql数据库的中间件：
+		
+	***** 作用：
+		1.	读写分离
+		2.	数据分片
+		3.	配置多数据源
+		
+	*****原理：
+		"拦截" 用户发送的sql 语句，然后通过分片分析，路由分析等。找到对应的服务器获取数据并返回......!
+		
+	如何使用：
+		真是的生产环境：mycat 要与主从分开搭建！
+		
+		1.	导入解压
+		2.	介绍配置文件：
+				①schema.xml：定义逻辑库，表、分片节点等内容
+				②rule.xml：定义分片规则
+				③server.xml：定义用户以及系统相关变量，如端口等
+		
+		3.	修改对应的配置文件：
+		
+		4.	启动mycat了！
+			
+			mysql -umycat -p123456 -P 9066 -h 192.168.200.168	维护数据端口： 
+			
+			mysql -umycat -p123456 -P 8066 -h 192.168.200.168   登录数据端口：
+			
+			测试mycat 链接数据库成功：目前链接数据库为master！
+			
+		
+		5.	测试mycat 的读写分离：
+				需要有读写分离的两个数据库：
+					master：
+						
+					slave：
+					
+					搭建读写分类。
+						1.	修改主机从机的配置文件。
+								
+						2.	在主机上授权一个账户进行读写分离工作 slave 123456;
+								show master status;
+								记录当前文件名称，以及位置！
+								
+						3.	在从机执行命令，利用salve 读取数据！
+							
+							CHANGE MASTER TO MASTER_HOST='主机ip地址',
+							MASTER_USER='X',MASTER_PASSWORD='X',
+							MASTER_LOG_FILE='mysql-bin.具体数字',MASTER_LOG_POS=具体值; 
+							
+							start slave;
+							
+							show salve status;
+							主要看两个线程：IO ,SQL 必须都是yes！
+							
+						4.	测试主从复制！
+							
+					
+				****balance="0" 默认 不开启：
+				1：双主双从 互为准备，读取数据时会有负载均衡！
+				2：随机读取！
+				3：读在readhost,写不参与！
+				
+				测试：2 重启mycat！
+				
+				***** 生产环境：生产环境请选择1或3
+				
+		垂直分库：
+			在两台主机上的两个数据库中的表，能否关联查询？
+				不能！
+				
+			****	根据不同的业务将表进行分类！
+			
+			**** 	分库原则：将有关系的放在一个库，没有关系的根据业务单独放在另外一个数据库！
+				demo:
+					orderInfo orderDetail  , userInfo userAddress :
+					
+			demo: 客户表分在一个数据库，另外三张都需要关联查询，分在另外一个数据库。
+				配置：
+					dataNode：
+					dataHost：
+			
+		水平分表：
+			***** 按照某个字段{客户Id}的某种规则{mod_long}来分散到多个库{dn1,dn2}之中！
+			
+			多个服务器之间的表，能否做关联查询！
+			case 1:
+				dn1:
+					将orders 进行分表：
+					有orders 表；
+				dn2:
+					也有orders表：
+			
+			***** E-R表：
+				case 2:	
+					订单与订单明细可能需要关联查询！
+					
+					dn1:					
+						有order_detail 表；
+					dn2:
+						也有order_detail表：
+						
+					insert into order_detail ...;
+					
+			***** 全局表：
+				这个表类似于公共的！
+				
+				修改配置文件：
+					<table name="dict_order_type" dataNode="dn1,dn2" type="global" ></table>
+					
+			全局序列：
+				5.3.1.本地文件：	不用风险高！
+				
+				5.3.2.时间戳方式：	太长了！
+				
+				5.3.3.自主生成全局序列：	使用redis，增加项目复杂度！
+				
+				5.3.4.数据库方式：
+						1.	预加载100个号段到mycat 内存！
+						2.	如果使用完了，会再次向数据库申请号段！
+						3.	如果mycat 停止了，则会有一部分号段失效！但是，能够保证主键不重复！
+						
+					
+				
+			
+			
+				
+		
+	
+	
+				
+			
+			
+			
+			
+				
+				
+	
+
+			
+					
+	
+	
+		
+	
+		
+			
+			
+		
+		
+
+
+		
+		
+		
+		
+					
+					
+				
+			
+			
+			
+						
+					
+						
+						
+						
+					
+					
+
+				
+				
+			
+			
+	
+		
+		
+		
+	
+
